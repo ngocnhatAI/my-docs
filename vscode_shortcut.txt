@@ -4,3 +4,7 @@ Ctrl Shift P
 -> Remote-SSH: Connec to Host...
 -> Python: Select Interpreter
 
+git config --global user.name "your_user_name"
+git config --global user.email "your_user_email"
+git config --list
+git config --global alias.save "!git add . && git commit -m 'Grateful for today' && git push origin main"
