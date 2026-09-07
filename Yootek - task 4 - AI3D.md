@@ -2,8 +2,6 @@
 
 - No remove, no ovtk. Just focus on core modules to connect, improve pipeline
 
-
-
 ## 2 - Summary
 
 - main.py: entry point khởi động server
@@ -14,13 +12,9 @@
 
 - models/: chứa toàn bộ checkpoint/model weight
 
-
-
 - image_2_3d.py: định nghĩa logic pipeline lõi cho one-image-to-3D (không qua HTTP)
 
 - hunyuan_api_3.py: FastAPI wrapper quanh logic trên + upload R2 + multi-view generation 
-
-
 
 ### 2.1 - custom_nodes/: chứa các node liên quan đến 3D
 
@@ -50,8 +44,6 @@
   
   - Danh sách lấy từ:[custom-node-list.json](https://github.com/ltdrdata/ComfyUI-Manager) — hoặc local `custom_nodes/comfyui-manager/custom-node-list.json`(update nếu cần)
 
-
-
 | Workflow                               | Mục đích                                                                   |
 | -------------------------------------- | -------------------------------------------------------------------------- |
 | flux_1_kontext_dev_basic.json          | Chỉnh sửa ảnh bằng Flux.1 Kontext (ảnh+prompt)                             |
@@ -61,10 +53,6 @@
 | hunyuan+ultrashape.json                | Ảnh đơn → mesh thô (Hunyuan3D) → refine bằng UltraShape → texture/export   |
 | hy3d_example_01.json                   | Workflow mẫu cơ bản gốc từ ComfyUI-Hunyuan3DWrapper                        |
 | one_image_2_3d.json                    | Ảnh đơn → Flux Kontext tiền xử lý ảnh → mesh → texture                     |
-
-
-
-
 
 ## 3 - Generate 3D
 
@@ -76,8 +64,6 @@ B3: 3D-VAE Decoder nhận 3D Clean Latent và decode nó thành một trường 
 
 B4: Trích xuất Mesh. Do VAE chỉ giải nén ra mật độ khối / trường khoảng cách (SDF), hệ thống cần thêm một thuật toán hình học (như **Marching Cubes**) để quét bề mặt đẳng trị và xuất ra file lưới tam giác (**Mesh .obj / .glb**).
 
-
-
 > **Tóm tắt luồng xử lý:**
 > 
 > `Ảnh 2D` $\rightarrow$ `Image Feature` (Condition)
@@ -85,6 +71,32 @@ B4: Trích xuất Mesh. Do VAE chỉ giải nén ra mật độ khối / trườ
 > `3D Noise` + `Condition` $\xrightarrow{\text{DiT}}$ `3D Latent` $\xrightarrow{\text{3D-VAE}}$ `SDF / NeRF Field` $\xrightarrow{\text{Marching Cubes}}$ `Mesh (3D)`
 
 
+
+## 4 - Tối ưu
+
+Hướng: guidance latent space
+
+- **Trellis**
+  
+  - Kết hợp Text Prompt để định hình các chi tiết bị che
+
+- **Direct3D (DiT 3D Native):**
+  
+  - Sử dụng trực tiếp DiT để sinh tri-plane latents từ ảnh đơn và text.
+
+- **CLAY (Continuous Latent 3D via DiT):**
+  
+  - Hỗ trợ conditioning linh hoạt bằng cả Text, Image hoặc Voxel sketches.
+
+- **LGM / CRM kết hợp DiT (Triplane-based DiT):**
+  
+  - Dòng mô hình mã hóa ảnh 2D sang không gian tri-plane/Gaussian latent bằng Transformer blocks, cho phép inject thêm Text prompt.
+
+- **Shap-E (OpenAI) / Biến thể DiT:**
+  
+  - Hỗ trợ native chế độ Image-to-3D có text conditioning
+- **TripoSR**
+- **Hunyuan3D**
 
 
 
@@ -94,14 +106,8 @@ B4: Trích xuất Mesh. Do VAE chỉ giải nén ra mật độ khối / trườ
 
 Vì sao trong input Hy3DGenerateMesh, image lấy từ ảnh gốc sau resize + mask thay vì ảnh sau khi mask: vì ảnh sau khi mask có chiều 1x518x518x4, phải là 1x518x518x3, có lẽ thừa chiều alpha (độ trong suốt)
 
-
-
 ? Model phải wraper? - để thống nhất input, output => readdy to connect
 
 ? Add nodes ở đâu
 
-
-
 Hướng: guidance latent space
-
-
