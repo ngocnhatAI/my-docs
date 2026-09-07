@@ -1,0 +1,126 @@
+[NOTE: ĐÂY LÀ NHỮNG PHẦN CẦN ĐỌC VÀ REVIEW LẠI, NHƯNG NGẠI QUÁ, LƯU TẠM VÀO ĐÂY TÍNH SAU]
+
+- Quản lý task với queue 
+- Cách truyền tham số có thể flexible parameters từ cùng một hàm gốc. Ví dụ hàm gốc là infer() có thể gọi theo nhiều config:
+infer(output_path, voice="Minh Đức) hoặc infer(output_path, audio="file.mp3")
+- Cách dùng thư viện `tempfile` cơ bản
+- Khởi tạo lifespan và import router
+- Viết dockerfileư
+
+Đánh giá API
+
+## Mức nghiêm trọng cao
+
+1. **API hoàn toàn không có authentication/authorization và rate limit**
+
+   Bất kỳ ai truy cập được service đều có thể:
+
+   - Chạy tác vụ TTS/clone tốn CPU/GPU.
+   - Upload file lâu dài.
+   - Xóa voice.
+   - Tạo vô hạn task async.
+
+   Xem [tts.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/tts.py:13) và [voices.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/voices.py:49). Nếu service public, đây là lỗ hổng DoS và quản trị rất rõ.
+
+2. **Có credential thật trong `.env`, quyền file là `664`**
+
+   [.env](/dataD/AI_projects/text_to_speech/yootex_tts/.env:1) chứa R2/MinIO/Hugging Face credentials và người dùng khác trên máy có thể đọc. Thư mục cũng không có `.gitignore`.
+
+   Nếu thư mục từng được gửi, backup hoặc commit ở đâu đó, nên coi credential đã lộ và rotate. Không nên chỉ xóa file rồi tiếp tục dùng key cũ.
+
+3. **Task queue thực tế không có giới hạn**
+
+   `TTS_MAX_TASKS` chỉ cố xóa task đã hoàn thành; nó không giới hạn số task `queued/running`. Khi tất cả task còn chờ, cleanup không xóa được gì và RAM/queue tiếp tục tăng: [tasks.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/tasks.py:18).
+
+   Trong khi đó engine chỉ có một worker: [engine.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/engine.py:17). Một client có thể đẩy hàng nghìn job vào hàng đợi.
+
+   Cần tách rõ:
+
+   - Giới hạn task đang chờ.
+   - Giới hạn request theo user/IP.
+   - Backpressure và trả `429/503`.
+   - Giới hạn chiều dài text phía backend.
+
+4. **Upload voice hiện không thật sự hoạt động với `/tts`**
+
+   `/upload-voice` chỉ chép file vào `app/assets`: [voices.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/voices.py:61). Không có chỗ nào gọi `model.add_voice()`.
+
+   `/tts` lại truyền tên voice thẳng vào `model.infer()`: [engine.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/engine.py:46). Model chỉ nhận voice đã đăng ký, nên voice upload được API liệt kê nhưng không sử dụng được.
+
+5. **`GET /voices` trả nhầm phần tử của tuple**
+
+   SDK trả `(label, voice_id)`, nhưng code giữ `label` và bỏ `voice_id`: [voices.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/voices.py:31). Label có thể là `"Tên — mô tả"`, trong khi `infer()` cần ID/tên thật. Consumer lấy kết quả `/voices` gửi lại `/tts` có thể bị `"Voice not found"`.
+
+## Lỗi xử lý request/error
+
+6. **Hầu hết status code đúng đều bị biến thành 500**
+
+   Các endpoint dùng `except Exception` bao ngoài cả `HTTPException`. Vì vậy:
+
+   - Engine chưa sẵn sàng: dự kiến 404, thực tế 500.
+   - Sai định dạng: dự kiến 400, thực tế 500.
+   - File quá 25 MB: dự kiến 413, thực tế 500.
+   - Voice không tồn tại: dự kiến 404, thực tế 500.
+
+   Ví dụ [tts.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/tts.py:43) và [voices.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/voices.py:73). Ngoài ra engine chưa sẵn sàng phù hợp với `503 Service Unavailable` hơn `404`.
+
+7. **Thông tin exception nội bộ bị trả thẳng ra client**
+
+   `str(e)` xuất hiện trong response và task status, có thể lộ đường dẫn filesystem, lỗi SDK, endpoint storage hoặc chi tiết hạ tầng: [tts_service.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/services/tts_service.py:70). Client nên nhận lỗi ổn định; chi tiết đầy đủ chỉ ghi vào log có `request_id`.
+
+8. **Không có validation chiều dài text phía backend**
+
+   UI giới hạn 5.000 ký tự, nhưng schema API không giới hạn gì: [schemas.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/schemas.py:10). Client không cần đi qua UI nên có thể gửi payload rất dài, gây chiếm worker lâu hoặc hết bộ nhớ.
+
+9. **Kiểm tra audio mới chỉ dựa vào phần mở rộng**
+
+   [storage.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/services/storage.py:83) không xác minh MIME, magic bytes, thời lượng, sample rate hay khả năng decode. File giả `.wav`/`.mp3`, audio cực dài nhưng nén nhỏ, hoặc file parser độc hại vẫn được chuyển vào thư viện audio.
+
+10. **`/upload-voice` không giới hạn dung lượng và ghi đè file cũ**
+
+   [voices.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/voices.py:63) copy đến EOF, không giới hạn byte và dùng trực tiếp filename đã sanitize. Cùng tên sẽ âm thầm overwrite voice cũ. Response còn trả absolute server path tại dòng 70.
+
+11. **Async clone có thể tạo task mồ côi hoặc rò file tạm**
+
+   Task record được tạo trước khi validate/lưu upload: [tts.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/tts.py:155). Nếu upload sai hoặc quá lớn, API trả lỗi nhưng record vẫn nằm ở trạng thái `queued`. Nếu lỗi xảy ra sau khi lưu file nhưng trước khi background task nhận quyền sở hữu, `temp_path` cũng không được xóa trong nhánh `except`.
+
+## Vận hành và kiến trúc
+
+12. **In-memory task store không chạy đúng với nhiều Uvicorn worker**
+
+   Mỗi process có `TTS_TASKS` riêng và load một model riêng. Submit tới worker A nhưng lần poll sau đến worker B sẽ nhận 404. Nhiều worker còn có thể load nhiều bản model vào cùng GPU. Restart service cũng làm mất toàn bộ trạng thái task.
+   Nếu đang chạy Uvicorn mặc định hoặc --workers 1: không có lỗi cross-worker; mỗi request không tạo thread mới, GPU inference được chạy tuần tự. Nếu chạy --workers 2+: mỗi worker load model riêng và có engine thread riêng; đây mới là nguy cơ quá tải GPU và task status 404 ngẫu nhiên.
+   Dù chỉ một worker, restart service vẫn làm mất task status vì chúng chỉ nằm trong RAM.
+   asyncio.create_task() không làm inference song song trên thread mới; nó chỉ đưa công việc vào hàng đợi của engine thread duy nhất. Điều này tương đối an toàn cho GPU, nhưng queue hiện chưa có giới hạn nên có thể chờ rất dài và ngốn RAM.
+13. **Shutdown có thể treo hoặc làm mất kết quả async**
+
+   `ThreadPoolExecutor.shutdown(wait=True)` được gọi đồng bộ bên trong coroutine: [engine.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/engine.py:78). Nó chặn event loop trong lúc drain queue; các coroutine đang chờ inference không thể tiếp tục upload/cập nhật trạng thái. Lifespan cũng không chủ động cancel/drain `RUNNING_TTS_TASKS`.
+
+14. **Một số I/O/CPU blocking vẫn chạy trên event loop**
+
+   Chuyển WAV→MP3 chạy trực tiếp ở [storage.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/services/storage.py:54), và upload voice dùng `shutil.copyfileobj` trực tiếp trong async endpoint. Request lớn hoặc ffmpeg chậm sẽ chặn các request khác.
+
+15. **File kết quả được public vô thời hạn**
+
+   URL R2 public được tạo tại [storage.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/services/storage.py:68), nhưng không thấy TTL, lifecycle hay endpoint xóa. Với nội dung clone giọng hoặc văn bản nhạy cảm, đây là vấn đề privacy/data retention. UUID làm URL khó đoán nhưng không biến object thành private.
+
+16. **Health check chưa phản ánh sức khỏe thực tế**
+
+   [health.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/api/health.py:6) luôn trả `"healthy"`, không kiểm tra `engine.ready`, queue saturation hay storage. Load balancer có thể tiếp tục gửi request vào instance không phục vụ được.
+
+17. **Đóng gói chưa tái lập được**
+
+   Không có `requirements.txt`, `pyproject.toml`, lockfile hay Dockerfile trong `yootex_tts/`; thay vào đó có `.venv` khoảng 7,3 GB. Ngoài ra [engine.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/engine.py:2) import `torch` bắt buộc, trái với README quảng bá chế độ CPU “torch-free”.
+
+
+## Các điểm nhỏ hơn
+
+- `VoiceListReponse` viết sai chính tả và schema chỉ dùng `list[str]`, không biểu diễn được cặp `label/id`.
+- `status` là chuỗi tự do thay vì enum; timestamp là `str` thay vì `datetime`.
+- Task `queued` được gán `success=True`, khá khó hiểu về semantics.
+- API layer truy cập private member `engine._model`, phá abstraction đã đề ra.
+- `cuda: 0` có khoảng trắng sai format ở [engine.py](/dataD/AI_projects/text_to_speech/yootex_tts/app/core/engine.py:39), dù hiện `_device` chưa được sử dụng.
+- Proxy UI đọc toàn bộ body vào RAM và không giới hạn `Content-Length`: [server.py](/dataD/AI_projects/text_to_speech/yootex_tts/web_ui/server.py:92). Vì mặc định chỉ bind localhost nên mức rủi ro thấp hơn.
+- Chưa có test tự động; mình chỉ thấy script tạm [tmp.py](/dataD/AI_projects/text_to_speech/yootex_tts/tmp.py:1).
+
+Thứ tự mình khuyên tự sửa: **credential → auth/rate limit/backpressure → kết nối đúng upload voice với model → sửa exception/validation → thiết kế lại async task store → shutdown và đóng gói**. Static syntax check và `pip check` hiện đều qua, nhưng mình chưa chạy inference/model/R2 thật.

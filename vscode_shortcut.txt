@@ -1,0 +1,6 @@
+Ctrl Shift P
+-> Terminal: Select Default Profile | Choose between bash, powershell, gitbash Terminal
+-> Preferences: Open User Settings (JSON) | Choose kernel: windows/linux/macos when ssh
+-> Remote-SSH: Connec to Host...
+-> Python: Select Interpreter
+
