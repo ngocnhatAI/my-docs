@@ -7,3 +7,5 @@ trellis 2
 depth-anything-3
 
 python main.py --port xxxx
+lệnh 2>&1 | tee file.log (-u, -a)
+

@@ -8,3 +8,5 @@ git config --global user.name "your_user_name"
 git config --global user.email "your_user_email"
 git config --list
 git config --global alias.save "!git add . && git commit -m 'Trust the journey' && git push origin main"
+
+hf download tencent/Hunyuan3D-2.1 hunyuan3d-dit-v2-1/model.fp16.ckpt --local-dir ./models

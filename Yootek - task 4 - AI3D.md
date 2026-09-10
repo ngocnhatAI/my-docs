@@ -70,11 +70,13 @@ B4: Trích xuất Mesh. Do VAE chỉ giải nén ra mật độ khối / trườ
 > 
 > `3D Noise` + `Condition` $\xrightarrow{\text{DiT}}$ `3D Latent` $\xrightarrow{\text{3D-VAE}}$ `SDF / NeRF Field` $\xrightarrow{\text{Marching Cubes}}$ `Mesh (3D)`
 
-
-
 ## 4 - Tối ưu
 
-Hướng: guidance latent space
+Hướng1: guidance latent space (không có model nào hỗ trợ text)
+
+Huong2: sinh multi-view image (ảnh multiview từ AI làm tăng sai số tích lũy)
+
+Hướng 3: sử dụng model image-2-image chỉnh ảnh, giảm góc khuất, giảm bớt yêu cầu nội suy cho model 3D
 
 - **Trellis**
   
@@ -95,10 +97,10 @@ Hướng: guidance latent space
 - **Shap-E (OpenAI) / Biến thể DiT:**
   
   - Hỗ trợ native chế độ Image-to-3D có text conditioning
+
 - **TripoSR**
+
 - **Hunyuan3D**
-
-
 
 **Di chuyển bằng Group (Nhóm):** Nhấp giữ chuột trái vào **tiêu đề của khung Group** để di chuyển toàn bộ các node nằm bên trong khung đó.
 
