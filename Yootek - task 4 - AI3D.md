@@ -1,115 +1,85 @@
-## 1 - Principles
+## Tóm tắt
 
-- No remove, no ovtk. Just focus on core modules to connect, improve pipeline
+- Bài toán: Cải thiện chất lượng đầu ra cho pipeline one-image-to-3D
 
-## 2 - Summary
+- Thực trạng: mô hình 3D bị méo, dính, sai thông tin cơ bản (ví dụ thỏ có 3 chân)
 
-- main.py: entry point khởi động server
+- Phương pháp: tiền xử lý ảnh bằng một model image-to-image, tạo ảnh mới sạch hơn, ít góc khuất hơn, giảm tải áp lực nội suy cho mô hình image-to-3D
 
-- nodes.py: định nghĩa toàn bộ node built-in 
 
-- comfy_extras/: định nghĩa các node phụ trợ (video, audio, masks,...)
 
-- models/: chứa toàn bộ checkpoint/model weight
+## Giai đoạn 1: Mì ăn liền
 
-- image_2_3d.py: định nghĩa logic pipeline lõi cho one-image-to-3D (không qua HTTP)
+### 1 - Chạy thử các workflow sử dụng ComfyUI Web
 
-- hunyuan_api_3.py: FastAPI wrapper quanh logic trên + upload R2 + multi-view generation 
+- ComfyUI là framework rất mạnh, hỗ trợ xây rất nhiều workflow chỉ bằng kéo thả.
 
-### 2.1 - custom_nodes/: chứa các node liên quan đến 3D
-
-| custom_nodes/                                            | Vai trò                                                                                                                                                            |
-|:-------------------------------------------------------- |:------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| ComfyUI-Hunyuan3DWrapper                                 | Wrapper gốc cho model Hunyuan3D — sinh mesh + paint texture.                                                                                                       |
-| ComfyUI-Hunyuan3d-2-1                                    | Wrapper cho phiên bản model Hunyuan3D-2.1mới hơn                                                                                                                   |
-| ComfyUI-UltraShape1                                      | Refine mesh 3D thô dựa theo ảnh gốc — bước hậu xử lý ngay sau khi generate mesh, tăng chi tiết hình học.                                                           |
-| ComfyUI-Free-GPU                                         | Giải phóng VRAM/RAM giữa các bước                                                                                                                                  |
-| ComfyUI_UltimateSDUpscale                                | Upscale ảnh bằng SD — dùng để tăng chất lượng ảnh input hoặc texture multiview trước khi bake.                                                                     |
-| comfyui-kjnodes<br/>ComfyUI_essentials<br/>ComfyLiterals | Bộ node tiện ích cơ bản (image processing, math, mask ops,..)                                                                                                      |
-| comfyui-to-python-extension                              | Convert workflow JSON → script Python — có thể đã được dùng để tạo image_2_3d.py từ one_image_2_3d.json. Hữu ích nếu bạn cần tái tạo/refactor code từ workflow UI. |
-
-### 2.2 - workflows/
-
-- Các workflow .json chỉ chạy được trên UI. Muốn expose qua API phải chuyển workflow từ .json => .py qua extension `comfyui-to-python-extension`
-
-- Cách build workflow
+- Công việc chính: sử dụng **Node Manager** để download **custom node**, chạy các workflows có sẵn trong các package đó rồi so sánh.
   
-  - Kéo-thả node trên giao diện web ComfyUI (có thể copy node từ workflow khác). Sau khi chạy thử thành công, lưu, ComfyUI sẽ tự sinh file .json
+  - Bản chất của nút Download trên web là clone + pip install requirements. Một vài nodes cần tự tải thêm thư viện mới chạy được
+
+- Sau khi chỉnh sửa **workflow**, khi bấm lưu thì ComfyUI sẽ tự cập nhật file .json. Từ file .json có thể xuất ra file .py (tự động). Với file .py ta có thể wrap thêm API.
+
+### 2 - Tóm tắt pipeline image-to-3D
+
+3D = mesh + texture. Tóm tắt pipeline: 
+
+- image => CLIP => Feature Embedding (Condition)
+
+- Condition => **DiT** => mesh latent space => **vae decode** = > mesh
+
+- Condition + mesh => **DiT** => texture latent space => **vae decode** => texture
+
+Bước 1: Ảnh 2D được đưa qua Image-encoder (CLIP,...) để lấy Feature Embedding.
+
+Bước 2: DiT bắt đầu từ 3D noisy latent, dưới sự hướng dẫn của Feature Embedding từng bước khử nhiểu để tạo latent space cho mesh/texture.
+
+Bước 3: 3D-VAE decode để tạo mesh/texture, kết hợp lại ta được vật thể 3D hoàn chỉnh
+
+### 3 - Các hướng tối ưu
+
+Hướng 1: Sử dụng text prompt để guidance 3D-latent-space. Hướng này còn rất mới, chỉ dừng ở phương pháp nghiên cứu, chưa có model hỗ trợ (tìm hiểu sau)
+
+Hướng 2: Dùng AI sinh multi-view images từ ảnh ban đầu. Sau đó sinh 3D với pipeline multi-images-to-3D. Không khả thi do ảnh multi-view từ AI chưa chắc đảm bảo nhất quán, có thể làm tăng sai số tích lũy.
+
+Hướng 3: sử dụng model image-2-image chỉnh ảnh, tạo ảnh mới sạch hơn, hạn chế tối đa góc khuất, chia sẻ gánh nặng nội suy vùng khuất cho model 3D.
+
+- Hướng 3.1: Chỉnh sửa ảnh gốc dựa theo prompt. 
   
-  - Dùng `Group/Subgraph` để thu gọn 1 cụm node thành một hộp duy nhất
+  - Condition = Text prompt, Latent space = Ref Image.
+
+- Hướng 3.2: Sinh ảnh mới hoàn toàn từ ảnh gốc và text
   
-  - Dùng Note node để ghi chú giải thích từng cụm, tránh quên sau này
+  - Condition = Text prompt + Ref Image, Latent space = Noise.
 
-- Node install: Trên UI, nút **"Manager"** → **"Install Custom Nodes"** → hiện danh sách search được hàng nghìn node từ cộng đồng
-  
-  - Danh sách lấy từ:[custom-node-list.json](https://github.com/ltdrdata/ComfyUI-Manager) — hoặc local `custom_nodes/comfyui-manager/custom-node-list.json`(update nếu cần)
+Ở đây chọn hướng 3.2, vì cần ảnh mới thật sạch và hạn chế vùng khuất, gần như là sinh ảnh mới. Hơn nữa model 3D ưu tiên đúng về cấu trúc, không cần giống hệt vật thể gốc.
 
-| Workflow                               | Mục đích                                                                   |
-| -------------------------------------- | -------------------------------------------------------------------------- |
-| flux_1_kontext_dev_basic.json          | Chỉnh sửa ảnh bằng Flux.1 Kontext (ảnh+prompt)                             |
-| flux 2.json                            | Chỉnh sửa ảnh bằng Flux.2 Dev (ảnh+prompt)                                 |
-| hunyuan_2-1.json                       | Ảnh đơn → 3D dùng model Hunyuan3D-2.1. Pipeline đơn giản để test model mới |
-| Hunyuan 3d Multiple View Ai Verse.json | Hunyuan 3d Multiple View Ai Verse.json                                     |
-| hunyuan+ultrashape.json                | Ảnh đơn → mesh thô (Hunyuan3D) → refine bằng UltraShape → texture/export   |
-| hy3d_example_01.json                   | Workflow mẫu cơ bản gốc từ ComfyUI-Hunyuan3DWrapper                        |
-| one_image_2_3d.json                    | Ảnh đơn → Flux Kontext tiền xử lý ảnh → mesh → texture                     |
+### 4 - Kết quả thực nghiệm
 
-## 3 - Generate 3D
+Quá trình được thực nghiệm trên các workflow. Các workflows đều sử dụng mặc định, dùng AI để phân loại nhanh ý nghĩa workflow, tránh phải tự đọc/thử toàn bộ.
 
-B1: Ảnh 2D được đưa qua một mạng trích xuất đặc trưng (như **CLIP** hoặc **DINO**) để lấy **Feature Embedding** (vector ngữ cảnh).
+- Trellis 2: độ chi tiết tương đối cao nhưng chỉ chạy được bản FB8 latent-dim=512, các bản khác cao hơn đều không chạy được, kể cả bản FB8 latent-dim=1024 (cấu hình max là FB16 latent-dim=1024). Cũng có tự tải bản IN8 nhưng chưa wrapper nên không thể dùng.
 
-B2: Diffusion Transformer (DiT) bắt đầu từ một khối **Nhiễu ngẫu nhiên trong không gian 3D (3D Noisy Latent)**, dưới sự hướng dẫn của Feature Embedding từ ảnh 2D, DiT tiến hành khử nhiễu từng bước để tạo ra một **3D Clean Latent** hoàn chỉnh.
+- Flux 2: sử dụng workflow mặc định + node **gguf** để chạy (ref: unsloth)
 
-B3: 3D-VAE Decoder nhận 3D Clean Latent và decode nó thành một trường biểu diễn 3D liên tục (thường là **SDF - Signed Distance Field**, **NeRF**, hoặc **3D Gaussians**).
+- Hunyuan 2, 2.1: cũng tạm ổn
 
-B4: Trích xuất Mesh. Do VAE chỉ giải nén ra mật độ khối / trường khoảng cách (SDF), hệ thống cần thêm một thuật toán hình học (như **Marching Cubes**) để quét bề mặt đẳng trị và xuất ra file lưới tam giác (**Mesh .obj / .glb**).
+Nhìn chung Hunyuan 2 khá ổn, nhưng với case con thỏ thì đuôi dài như đuôi cáo. Hunyuan2.1 và Trellis 2 tránh được lỗi đuôi cáo, nhưng chạy cũng quá chậm.
 
-> **Tóm tắt luồng xử lý:**
-> 
-> `Ảnh 2D` $\rightarrow$ `Image Feature` (Condition)
-> 
-> `3D Noise` + `Condition` $\xrightarrow{\text{DiT}}$ `3D Latent` $\xrightarrow{\text{3D-VAE}}$ `SDF / NeRF Field` $\xrightarrow{\text{Marching Cubes}}$ `Mesh (3D)`
+### 5 - Note
 
-## 4 - Tối ưu
+**Debug Tensor Shape** → `essentials/utilities`: Node in ra tensor shape của ảnh
 
-Hướng1: guidance latent space (không có model nào hỗ trợ text)
+File safetensors gồm nhiều sub-models, có thể phân rã thành các file độc lập
 
-Huong2: sinh multi-view image (ảnh multiview từ AI làm tăng sai số tích lũy)
 
-Hướng 3: sử dụng model image-2-image chỉnh ảnh, giảm góc khuất, giảm bớt yêu cầu nội suy cho model 3D
 
-- **Trellis**
-  
-  - Kết hợp Text Prompt để định hình các chi tiết bị che
 
-- **Direct3D (DiT 3D Native):**
-  
-  - Sử dụng trực tiếp DiT để sinh tri-plane latents từ ảnh đơn và text.
 
-- **CLAY (Continuous Latent 3D via DiT):**
-  
-  - Hỗ trợ conditioning linh hoạt bằng cả Text, Image hoặc Voxel sketches.
 
-- **LGM / CRM kết hợp DiT (Triplane-based DiT):**
-  
-  - Dòng mô hình mã hóa ảnh 2D sang không gian tri-plane/Gaussian latent bằng Transformer blocks, cho phép inject thêm Text prompt.
 
-- **Shap-E (OpenAI) / Biến thể DiT:**
-  
-  - Hỗ trợ native chế độ Image-to-3D có text conditioning
+Thiết kế model được lazy-load từng phần (chỉ load lên GPU đúng lúc cần, có thể unload sau khi dùng xong stage)
 
-- **TripoSR**
+Thiết kế cơ chế low_vram (chunk từng phần theo chunk_size)
 
-- **Hunyuan3D**
-
-**Di chuyển bằng Group (Nhóm):** Nhấp giữ chuột trái vào **tiêu đề của khung Group** để di chuyển toàn bộ các node nằm bên trong khung đó.
-
-**Debug Tensor Shape** → `essentials/utilities`: in ra tensor shape của ảnh
-
-Vì sao trong input Hy3DGenerateMesh, image lấy từ ảnh gốc sau resize + mask thay vì ảnh sau khi mask: vì ảnh sau khi mask có chiều 1x518x518x4, phải là 1x518x518x3, có lẽ thừa chiều alpha (độ trong suốt)
-
-? Model phải wraper? - để thống nhất input, output => readdy to connect
-
-? Add nodes ở đâu
-
-Hướng: guidance latent space
+Giải phóng VRAM chủ động

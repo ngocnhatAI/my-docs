@@ -10,3 +10,10 @@ git config --list
 git config --global alias.save "!git add . && git commit -m 'Trust the journey' && git push origin main"
 
 hf download tencent/Hunyuan3D-2.1 hunyuan3d-dit-v2-1/model.fp16.ckpt --local-dir ./models
+
+mv 		di chuyển, đổi tên file
+lệnh 2>&1 | tee file.log (-u, -a)
+
+ps -fp <PID>	thông tin dòng lệnh khởi chạy task, f: full format, p: process
+pwdsx <PID>	xem working directory của tiến trình
+ls -lh		hiển thị danh sách file kèm ngày giờ (h: human-readable)
