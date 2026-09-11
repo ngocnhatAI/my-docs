@@ -8,6 +8,66 @@
 
 
 
+## Giai đoạn 2: Đóng gói custom nodes
+
+### 1 - Mục tiêu:
+
+- Sau khi làm quen với template, chạy thử các mô hình, tạm hiểu luồng và lý thuyết cơ bản. Bên cạnh việc tiếp tục đào sâu lý thuyết, cần tự wraps một model thành một custom node để chạy trên ComfyUI (rèn kĩ năng lập trình).
+
+- Model sử dụng: Trellis 2 GGUF  (có thể chạy local đỡ lag)
+
+
+
+### 2 -Tham khảo các workflow trong Trellis template
+
+**Texture Only**
+
+1. MeshTexturing: Compute Thấp | Chất lượng Trung bình (12 bước, cfg 5).
+
+2. MeshTexturing_HighQuality: Compute Trung bình | Chất lượng Cao (25 bước, cfg 7.5, texture sắc nét).
+
+**Mesh Only**
+
+1. MeshOnly_LowPoly: Compute Trung bình (+ overhead CPU) | Chất lượng Cố tình thấp (tối ưu game/real-time).
+
+2. MeshOnly: Compute Trung bình | Chất lượng Trung bình (baseline mặc định, 12 bước, simplify 500k face).
+
+3. MeshOnly_HighQuality: Compute Cao | Chất lượng Cao (tăng resolution mọi tầng, shape 1024, cascade 1536, sparse voxel 64).
+
+4. MeshOnly_Pixal3D: Compute Cao | Chất lượng Cao (dùng model Pixal3D, 25 bước/giai đoạn).
+
+5. Gen Mesh Only with Trellis2 DCx: Compute Cao | Chất lượng Cao (dual-contouring, target simplify 1.000.000 face, chi tiết dày).
+
+6. MeshOnly_HighQuality_NoCascade: Compute Rất cao | Chất lượng Cao cục bộ (bỏ Cascade, Sparse 50 bước, voxel 64).
+
+**Mesh + Texture**
+
+1. MeshWithTexturing: Compute Cao | Chất lượng Trung bình–Cao (pipeline mặc định qua Trellis2Continue).
+
+2. MeshWithTexturing_Pixal3D: Compute Cao | Chất lượng Cao (Pixal3D + tách nhánh UV riêng, dễ chỉnh sửa).
+
+3. MeshWithTexturing_LowPoly: Compute Cao nhất | Chất lượng Toàn diện (pipeline đầy đủ + nhánh xuất song song low-poly game-ready).
+
+
+
+### 3 - Cải tiến nâng cao
+
+Thiết kế model được lazy-load từng phần (chỉ load lên GPU đúng lúc cần, có thể unload sau khi dùng xong stage)
+
+Thiết kế cơ chế low_vram (chunk từng phần theo chunk_size)
+
+Giải phóng VRAM chủ động
+
+
+
+-
+
+---
+
+---
+
+
+
 ## Giai đoạn 1: Mì ăn liền
 
 ### 1 - Chạy thử các workflow sử dụng ComfyUI Web
@@ -71,15 +131,3 @@ Nhìn chung Hunyuan 2 khá ổn, nhưng với case con thỏ thì đuôi dài nh
 **Debug Tensor Shape** → `essentials/utilities`: Node in ra tensor shape của ảnh
 
 File safetensors gồm nhiều sub-models, có thể phân rã thành các file độc lập
-
-
-
-
-
-
-
-Thiết kế model được lazy-load từng phần (chỉ load lên GPU đúng lúc cần, có thể unload sau khi dùng xong stage)
-
-Thiết kế cơ chế low_vram (chunk từng phần theo chunk_size)
-
-Giải phóng VRAM chủ động
