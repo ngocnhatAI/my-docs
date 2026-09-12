@@ -6,4 +6,15 @@ skybox AI: api ai360
 trellis 2
 depth-anything-3
 
+================================================================================
+Tạo mô hình 3D tương tác của phân tử nước (H2O) hiển thị rõ tính phân cực.
+Tạo mô hình 3D nguyên tử Carbon (C) với khả năng xoay 360 độ, làm nổi bật lớp vỏ electron và hạt nhân.
+- chất lượng ảnh đầu ra không đồng nhất => cần có system prompt riêng cho hóa học
+- các mô hình hóa học rất khó để nội suy (dùng text-to-3D)
+
+Tải torch đúng bản có CUDA phù hợp với driver máy tính https://pytorch.org/get-started/locally/
+Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6.0+cu126) thì là tương thích
+ 
+
+Isometric 3/4 view turnaround reference sheet of the input subject, isolated on a solid neutral gray background. Open non-occluded pose with distinct separated limbs and parts, fully visible silhouette. High readability, diffuse flat lighting, shadowless, clean uniform surfaces, bold solid colors, no micro-texture, no clutter, no depth of field.
 

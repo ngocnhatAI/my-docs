@@ -6,8 +6,6 @@
 
 - Phương pháp: tiền xử lý ảnh bằng một model image-to-image, tạo ảnh mới sạch hơn, ít góc khuất hơn, giảm tải áp lực nội suy cho mô hình image-to-3D
 
-
-
 ## Giai đoạn 2: Đóng gói custom nodes
 
 ### 1 - Mục tiêu:
@@ -15,8 +13,6 @@
 - Sau khi làm quen với template, chạy thử các mô hình, tạm hiểu luồng và lý thuyết cơ bản. Bên cạnh việc tiếp tục đào sâu lý thuyết, cần tự wraps một model thành một custom node để chạy trên ComfyUI (rèn kĩ năng lập trình).
 
 - Model sử dụng: Trellis 2 GGUF  (có thể chạy local đỡ lag)
-
-
 
 ### 2 -Tham khảo các workflow trong Trellis template
 
@@ -48,8 +44,6 @@
 
 3. MeshWithTexturing_LowPoly: Compute Cao nhất | Chất lượng Toàn diện (pipeline đầy đủ + nhánh xuất song song low-poly game-ready).
 
-
-
 ### 3 - Cải tiến nâng cao
 
 Thiết kế model được lazy-load từng phần (chỉ load lên GPU đúng lúc cần, có thể unload sau khi dùng xong stage)
@@ -58,15 +52,11 @@ Thiết kế cơ chế low_vram (chunk từng phần theo chunk_size)
 
 Giải phóng VRAM chủ động
 
-
-
 -
 
 ---
 
 ---
-
-
 
 ## Giai đoạn 1: Mì ăn liền
 
