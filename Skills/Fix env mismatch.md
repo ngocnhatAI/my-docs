@@ -11,10 +11,10 @@ RuntimeError: operator torchvision::nms does not exist
 Dấu hiệu nhận biết mismatch (học thuộc các pattern này):
 
 - `does not exist.....` 
-- `undefined symbol: .....` 
-- `OSError: Could not load this library.....`
 
-- `OSError: ... .so: cannot open shared object file` → thiếu thư viện hệ thống (khác loại vấn đề, xem mục 5)
+- `undefined symbol: .....` 
+
+- `OSError: Could not load this library.....`
 
 ## 2. Quy trình chẩn đoán
 
@@ -30,6 +30,7 @@ python -c "import torch; print(torch.__version__, torch.version.cuda)"
 
 # Bước 2: liệt kê MỌI package có native extension (biên dịch C++/CUDA)
 pip list | grep -iE "torch|cuda|flash|cumesh|xformers|rasterizer"
+pip list | grep -iE "^torch" (only start with torch)
 ```
 
 - i (ignore): không phân biệt chữ hoa chữ thường
@@ -81,6 +82,19 @@ flash_attn-2.8.3.post1+cu12torch2.7cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
 
 Cách tìm: vào trang **Releases** trên GitHub của package đó (không phải PyPI, vì các package native/CUDA nặng thường không upload hết lên PyPI do giới hạn dung lượng), tìm asset có tên khớp 4 tiêu chí.
 
+**NOTE**: với trường hợp torch/torchaudio... đã cài xong xuôi, muốn cài thêm một package mới. Cứ cài như bình thường, xong dùng `pip show...` để kiểm tra torch có bị thay đổi không. 
+
+Nếu thay đổi (sẽ gây lỗi), cài lại với constrant:
+
+```bash
+pip install some-new-package -c path-to-constrant-txt-file
+
+# constraints.txt
+torch==2.7.1
+torchvision==0.22.1
+torchaudio==2.7.1
+```
+
 ## 4. Gỡ và cài lại — thứ tự an toàn
 
 ```bash
@@ -120,5 +134,3 @@ xformers 0.0.35 requires torch>=2.10, but you have torch 2.7.1+cu128 which is in
 3. **Tra bảng compatibility torch/torchvision/torchaudio**, hoặc `pip index versions <pkg> --index-url https://download.pytorch.org/whl/cuXXX`.
 4. **Cài đồng bộ trong 1 lệnh** với cùng `--index-url`; luôn đọc cảnh báo `incompatible` cuối log để bắt domino tiếp theo (như xformers, cumesh...).
 5. **Verify bằng import thực tế**, không chỉ tin version string — vì version đúng mà symbol vẫn có thể thiếu nếu package đó build riêng (flash_attn, cumesh) thì cần khớp thêm `cxx11abi` + `cp3XX` khi tìm wheel bên thứ 3.
-
-
