@@ -18,3 +18,8 @@ Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6
 
 Isometric 3/4 view turnaround reference sheet of the input subject, isolated on a solid neutral gray background. Open non-occluded pose with distinct separated limbs and parts, fully visible silhouette. High readability, diffuse flat lighting, shadowless, clean uniform surfaces, bold solid colors, no micro-texture, no clutter, no depth of field.
 
+target face number => 30000
+hạ reconstruct mesh with quad resolution: 1024 => 512
+hạ texture size: 2048 => 512
+hạ texture resolution: 1024 => 512
+
