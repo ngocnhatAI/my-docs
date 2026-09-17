@@ -23,3 +23,36 @@ hạ reconstruct mesh with quad resolution: 1024 => 512
 hạ texture size: 2048 => 512
 hạ texture resolution: 1024 => 512
 
+==========================================Nên tự đọc code, tránh đụng tí là hỏi
+preprocess;: 
+Tiền xử lý ảnh bỏ padding (vì ảnh qua flux đã ôm trọn vật thể), thêm tiền xử lý làm mượt nữa
+Xóa nền=> trả về ảnh RBGA
+Nếu target solution < current solution (scale)
+Phần preprocces đang crop ảnh sát ngay rồi mới padding 
+=> crop dư (không cần padding, tiết kiệm thời gian). Default padding = 10
+Nếu không padding, Crop sát quá bị lẹm model sinh ra sẽ éo tô màu???
+Đã thử: padding = 5 kết quả sinh ra vẫn ổn
+=> Liệu size ảnh có ảnh hưởng tốc độ (nếu không bỏ bước resize luôn)
+
+Trellis2ImageCondGenerator:
+- set max view auto = 1
+- Nếu images từ đầu là images thì cần gì đổi đi đổi lại, bỏ hàm tensor_batch_to_pil đi
+- Cái bước loader chỉ đẩy vào RAM?? còn khi dùng load_model mới đẩy lên to_device?? 
+low vram là gì....
+
+
+Dùng ss model là ra k cần decode ss à => cần
+
+fill holes with cumesh giúp bỏ qua các hole lớn (tránh vá thành một cục)
+
+để resolution=512 cho nhanh (hunyuan cũng 512 mà)
+
+khi trimesh được tạo từ res 512 thì khi encode với res = 1024 thì sao
+khi đó res sẽ là bao nhiêu.
+
+shape slat từ ngay từ bước 2 cho vào text slats được k, nên dùng encode shape slat để tăng độ phân giải
+(là vae encode từ đầu đó...)
+
+Nếu run nhanh k cần fill hole linh tinh thì chạy thẳngg
+
+nếu xóa mess sau này thì cũng k cần reconsstruction
