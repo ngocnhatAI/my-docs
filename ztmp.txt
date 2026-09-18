@@ -6,6 +6,10 @@ skybox AI: api ai360
 trellis 2
 depth-anything-3
 
+In ra ID của container đang chạy task có PID
+grep -oE '[0-9a-f]{64}' /proc/<PID>/cgroup | head -n 1 | cut -c 1-12
+2b8ae2200a79
+
 ================================================================================
 Tạo mô hình 3D tương tác của phân tử nước (H2O) hiển thị rõ tính phân cực.
 Tạo mô hình 3D nguyên tử Carbon (C) với khả năng xoay 360 độ, làm nổi bật lớp vỏ electron và hạt nhân.
