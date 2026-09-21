@@ -25,6 +25,7 @@
     - shape_slat: mesh + shape_VAE (encoder)
   
   - texture: texture_slat + texture_VAE (decoder)
+
 - Combine texture + mesh => Final model
 
 ## 2 - Main update
@@ -87,8 +88,6 @@ Nạp model là vào RAM, rồi mới đẩy lên VRAM của GPU để chạy??
 
 ## 5 - Archieved:
 
-Prompt: *Clean 3/4 perspective shot of the exact same subject as input image, preserving all true original colors, materials, and broad textures. Single isolated object centered on solid neutral studio background. Clear separation between distinct components and limbs revealing 3D form and geometry. Accurate anatomy and authentic proportions. Flat, shadowless, even studio lighting showing only true local colors without shadows, shading, or color cast. Simplified smooth surfaces, minimal micro-details, no floating elements, no artifacts.*
-
-
+Prompt: *Clean 3/4 perspective shot of the exact same subject as input image, preserving all true original colors, materials, and broad textures. Fully complete, entire single isolated object, no parts cut off, centered on solid neutral studio background with wide margins. Clear separation between distinct components and limbs revealing 3D form and geometry. Accurate anatomy and authentic proportions. Flat, shadowless, even studio lighting showing only true local colors without shadows, shading, or color cast. Simplified smooth surfaces, minimal micro-details, no floating elements, no artifacts.*
 
 ### 
