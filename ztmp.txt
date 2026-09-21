@@ -46,3 +46,5 @@ Sau khi có mesh, texture (slat+decode), muốn tô màu hoàn chỉnh cần pos
 - được con thỏ thì mất con hổ
 
 Segment thêm alpha, mượt vl
+
+prompt vừa exact subject thì khó xoay góc phô nhiều chi tiết nhất.
