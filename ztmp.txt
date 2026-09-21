@@ -8,7 +8,6 @@ depth-anything-3
 
 In ra ID của container đang chạy task có PID
 grep -oE '[0-9a-f]{64}' /proc/<PID>/cgroup | head -n 1 | cut -c 1-12
-2b8ae2200a79
 
 ================================================================================
 Tạo mô hình 3D tương tác của phân tử nước (H2O) hiển thị rõ tính phân cực.
@@ -20,43 +19,3 @@ Tải torch đúng bản có CUDA phù hợp với driver máy tính https://pyt
 Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6.0+cu126) thì là tương thích
  
 
-Isometric 3/4 view turnaround reference sheet of the input subject, isolated on a solid neutral gray background. Open non-occluded pose with distinct separated limbs and parts, fully visible silhouette. High readability, diffuse flat lighting, shadowless, clean uniform surfaces, bold solid colors, no micro-texture, no clutter, no depth of field.
-
-target face number => 30000
-hạ reconstruct mesh with quad resolution: 1024 => 512
-hạ texture size: 2048 => 512
-hạ texture resolution: 1024 => 512
-
-==========================================Nên tự đọc code, tránh đụng tí là hỏi
-preprocess;: 
-Tiền xử lý ảnh bỏ padding (vì ảnh qua flux đã ôm trọn vật thể), thêm tiền xử lý làm mượt nữa
-Xóa nền=> trả về ảnh RBGA
-Nếu target solution < current solution (scale)
-Phần preprocces đang crop ảnh sát ngay rồi mới padding 
-=> crop dư (không cần padding, tiết kiệm thời gian). Default padding = 10
-Nếu không padding, Crop sát quá bị lẹm model sinh ra sẽ éo tô màu???
-Đã thử: padding = 5 kết quả sinh ra vẫn ổn
-=> Liệu size ảnh có ảnh hưởng tốc độ (nếu không bỏ bước resize luôn)
-
-Trellis2ImageCondGenerator:
-- set max view auto = 1
-- Nếu images từ đầu là images thì cần gì đổi đi đổi lại, bỏ hàm tensor_batch_to_pil đi
-- Cái bước loader chỉ đẩy vào RAM?? còn khi dùng load_model mới đẩy lên to_device?? 
-low vram là gì....
-
-
-Dùng ss model là ra k cần decode ss à => cần
-
-fill holes with cumesh giúp bỏ qua các hole lớn (tránh vá thành một cục)
-
-để resolution=512 cho nhanh (hunyuan cũng 512 mà)
-
-khi trimesh được tạo từ res 512 thì khi encode với res = 1024 thì sao
-khi đó res sẽ là bao nhiêu.
-
-shape slat từ ngay từ bước 2 cho vào text slats được k, nên dùng encode shape slat để tăng độ phân giải
-(là vae encode từ đầu đó...)
-
-Nếu run nhanh k cần fill hole linh tinh thì chạy thẳngg
-
-nếu xóa mess sau này thì cũng k cần reconsstruction
