@@ -8,8 +8,10 @@ depth-anything-3
 
 In ra ID của container đang chạy task có PID
 grep -oE '[0-9a-f]{64}' /proc/<PID>/cgroup | head -n 1 | cut -c 1-12
-3481867:
-grep -oE '[0-9a-f]{64}' /proc/3481867/cgroup | head -n 1 | cut -c 1-12
+4eb97407df77
+87da7b086ddc
+grep -oE '[0-9a-f]{64}' /proc/3802674/cgroup | head -n 1 | cut -c 1-12
+
 
 
 
