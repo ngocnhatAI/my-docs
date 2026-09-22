@@ -8,18 +8,6 @@ depth-anything-3
 
 In ra ID của container đang chạy task có PID
 grep -oE '[0-9a-f]{64}' /proc/<PID>/cgroup | head -n 1 | cut -c 1-12
-4eb97407df77
-87da7b086ddc
-grep -oE '[0-9a-f]{64}' /proc/3802674/cgroup | head -n 1 | cut -c 1-12
-
-
-
-
-================================================================================
-Tạo mô hình 3D tương tác của phân tử nước (H2O) hiển thị rõ tính phân cực.
-Tạo mô hình 3D nguyên tử Carbon (C) với khả năng xoay 360 độ, làm nổi bật lớp vỏ electron và hạt nhân.
-- chất lượng ảnh đầu ra không đồng nhất => cần có system prompt riêng cho hóa học
-- các mô hình hóa học rất khó để nội suy (dùng text-to-3D)
 
 Tải torch đúng bản có CUDA phù hợp với driver máy tính https://pytorch.org/get-started/locally/
 Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6.0+cu126) thì là tương thích
@@ -27,26 +15,4 @@ Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6
 CHỈNH FILE README CHỈ ĐƯỢC GỢI Ý K ĐƯỢC THAY CODE
 
 ================================================================================
-Chốt test case: DONE
-Test thử FLUX: OK
 
-Image classify: đã chốt xong nodes và prompt (hiện prompt đang hơi hard-code, leak test-case, mới chỉ chia đơn giản (dễ-khó) => phù hợp bản draft
-
-/home/yootek/projects/ComfyUI_hunyuan/custom_nodes/ComfyUI-QwenVL/AILab_DifficultyRouter.py
-Thêm routing-node (LOAD model chưa có input nên nó vẫn chạy đấy)
-Khi ExecutionBlocker(None) được truyền làm input cho node kế tiếp, ComfyUI sẽ không thực thi node đó — thay vào đó nó tự động lan truyền ExecutionBlocker xuống làm output của node đó luôn (giống exception lan truyền), và tiếp tục lan xuống mọi node phía sau nhận input đó. Vì message=None, việc "chặn" diễn ra im lặng (không báo lỗi đỏ trên UI) — khác với truyền một string message thì UI sẽ hiện lỗi tại node bị chặn.
-
-Vậy hiệu ứng thực tế: cả nhánh phía sau (mọi node downstream nhận trực tiếp hoặc gián tiếp giá trị bị block) đều bị skip hoàn toàn, không tốn thời gian/VRAM chạy — đúng như mục tiêu routing bạn muốn (nhánh không được chọn sẽ không chạy).
-
-Nghĩa là engine tự động scan qua tất cả input values trước khi gọi hàm xử lý. Nếu bất kỳ input nào là instance của ExecutionBlocker, nó set execution_block và hoàn toàn không gọi obj.FUNCTION(...) — hàm route(), process(), hay bất kỳ hàm nào của node đó không bao giờ được thực thi, không quan trọng code trong hàm có kiểm tra/dùng input đó hay không.
-
-Vậy trả lời câu hỏi của bạn: chỉ cần input nhận được là ExecutionBlocker, node sẽ tự động bị skip ở tầng engine — code bên trong hàm process/run/v.v. không cần và không có cơ hội chạy để "xử lý" hay "bỏ qua" giá trị đó. Bản thân ExecutionBlocker sau đó được tự động lan xuống làm output giả cho mọi RETURN_TYPES của node đó (dòng 381-383 ở đoạn trước), để tiếp tục lan truyền sang các node con phía sau.
-
-Sau khi có mesh, texture (slat+decode), muốn tô màu hoàn chỉnh cần postprocess_mesh (có trong Trellis2UnWrapAndRasterizer...) 
-
-Đ hiểu tại sao khi đổi padding, thêm vào lại méo (kệ mẹ), revert lại cũ
-- được con thỏ thì mất con hổ
-
-Segment thêm alpha, mượt vl
-
-prompt vừa exact subject thì khó xoay góc phô nhiều chi tiết nhất.
