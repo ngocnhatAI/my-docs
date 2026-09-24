@@ -15,4 +15,4 @@ Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6
 CHỈNH FILE README CHỈ ĐƯỢC GỢI Ý K ĐƯỢC THAY CODE
 
 ================================================================================
-
+/home/yootek/projects/ComfyUI_hunyuan/cuda_malloc.py
