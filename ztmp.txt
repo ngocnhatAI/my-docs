@@ -8,6 +8,10 @@ depth-anything-3
 
 In ra ID của container đang chạy task có PID
 grep -oE '[0-9a-f]{64}' /proc/<PID>/cgroup | head -n 1 | cut -c 1-12
+ps -fp PID
+sudo pwdx PID
+sudo readlink -f /proc/PID/exe
+COMFYUI_PATH
 
 Tải torch đúng bản có CUDA phù hợp với driver máy tính https://pytorch.org/get-started/locally/
 Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6.0+cu126) thì là tương thích
@@ -15,4 +19,22 @@ Kiểm tra version của torch, audio, vision. Nếu cùng đuôi (ví dụ: 2.6
 CHỈNH FILE README CHỈ ĐƯỢC GỢI Ý K ĐƯỢC THAY CODE
 
 ================================================================================
-/home/yootek/projects/ComfyUI_hunyuan/cuda_malloc.py
+- Thêm mode ôn tập
+- Tìm cách lưu file, query hiệu quả
+- Thay sẵn code embed load sẵn
+- Tìm hiểu cơ chế chạy song song
+
+hạn chế stop app
+
+modal container stop 
+modal app stop
+lưu vào gpu
+modal app list
+modal app logs 
+
+lâu vì: 
+- text encoder
+- model tách nền
+- đẩy nhánh insprnet về hunyuan
+- set free gpu ở một chỗ sau flux thôi, chỗ kia dùng unload true, hoặc ngược lại
+Thêm đọc list task, xóa nữa
