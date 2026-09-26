@@ -1,4 +1,4 @@
-**1 - Export workflow ra Python bằng extention comfy-ui-to-python extension**
+## 1 - Export workflow ra Python bằng extention comfy-ui-to-python extension
 
 Script tự tìm `ComfyUI` path bằng cách dò thư mục cha, nhưng vì thư mục hiện tại tên `ComfyUI_hunyuan` (không phải `ComfyUI`) nên cần set `COMFYUI_PATH`. 
 
@@ -9,7 +9,7 @@ cd custom_nodes/comfyui-to-python-extension
 python -m comfyui_to_python --input_file file.json --output_file file.py \-- queue_size 1
 ```
 
-**2. Viết class API wrapper** 
+## 2. Viết class API wrapper
 
 Input: File workflow.py sau khi workflow.json, có thể chạy end-to-end không giao diện.
 
@@ -19,7 +19,9 @@ Output 2:  Đóng API, gọi đến method trong class vừa build.
 
 Kiểm thử: Chạy test bằng API docs.
 
-Các bước đã sửa:
+
+
+**Các bước đã sửa:**
 
 1. Import `torch` sau `bootstrap_comfyui_runtime()`, chi tiết phụ lục **A.1**
 
@@ -48,11 +50,11 @@ Các bước đã sửa:
 8. Thêm hàm main để test với args truyền vào (test API docs)
 
 9. Kế thừa
-- Logic API
+- Logic API local
 
 
 
-Skill:
+**Skill:**
 
 - Cách dùng hàm main để test với args truyền vào, dựng API đơn giản để test
 
@@ -68,20 +70,22 @@ Skill:
 
 
 
-**3. Viết file Modal wrapper**
+## 3. Viết file Modal wrapper
 
-Debug `workflow.py` để import được trong worker Modal
+**Debug `workflow.py` để import được trong worker Modal**
 
-- **`import_custom_nodes()`**: thêm `nest_asyncio.apply()` trước `asyncio.run(...)`. 
+- ****`import_custom_nodes()`: thêm `nest_asyncio.apply()` trước `asyncio.run(...)`. 
   
   - Lý do: worker Modal là hàm `async` (`async def run_3d_generation_task`), tức đã có một event loop đang chạy. `asyncio.run()` bên trong một event loop khác sẽ ném lỗi "cannot be called from a running event loop". `nest_asyncio` cho phép lồng event loop.
 
-- **`bootstrap_comfyui_runtime()`**: bỏ `comfy.options.enable_args_parsing()`. 
+- `bootstrap_comfyui_runtime()`: bỏ `comfy.options.enable_args_parsing()`. 
   
   - Lý do: nếu bật, ComfyUI sẽ `argparse.parse_args()`  trên `sys.argv` thật của tiến trình Modal container — chứa các tham số không phải của ComfyUI → có thể crash hoặc nhận nhầm giá trị. Tắt đi thì dùng args mặc định (giống cách
     `image_2_3d.py` cũ vốn đã làm).
 
-Debug `modal.py`**(Image pin torch = 2.7.1)**
+
+
+**Debug `modal.py`(Image pin torch = 2.7.1)**
 
 - `GLIBCXX_3.4.31' not found` (thiếu trong `libstdc++.so.6`)
   
@@ -96,7 +100,9 @@ Debug `modal.py`**(Image pin torch = 2.7.1)**
   - Sau bước trên, bộ wheel (`cumesh`, `flex_gemm`, `nvdiffrast`, `o_voxel`) import được (torch270). Kiểm tra bằng `strings` trên các `.so`:  `o_voxel` được build với torch ≥ 2.8 
   - Fix: `pip install . --no-build-isolation --no-deps`, build từ source thay vì dùng wheel sẵn.  Dùng source `https://github.com/visualbruno/TRELLIS.2`
 
-Nguyên tắc khi build Modal Image
+
+
+**Nguyên tắc khi build Modal Image**
 
 - Không goi `.add_local_dir(".", "/root", copy=True)`ngay đầu chuỗi build, trước cả `apt_install`, `pip install`, compile CUDA extension. Modal build image theo layer có cache tuần tự: sửa bất kỳ dòng code Python nào (dù  không liên quan gì đến pip) → layer đó đổi → mọi layer phía sau bị build lại từ đầu, bao gồm cả việc tải hàng chục GB model và compile CUDA extension mất nhiều phút.
 
@@ -106,7 +112,26 @@ Nguyên tắc khi build Modal Image
   
   - Image nhỏ, build nhanh`modal volume put`
 
-Base commands
+
+
+**Cải thiện:**
+
+- Bỏ text encoder, nạp thẳng tensor chứa flux-prompt vào conditioning.
+
+- Chỉ free-vram sau flux2, vì qwenVL tự unload model.
+
+- Chia nodes rõ ràng về 2 nhánh Trellis/Hunyuan, tránh gộp vào route chung.
+
+- Với trellis, set low_vram=False và keep_models=True, giữ model luôn trên VRAM sau khi dùng, đỡ mất thời gian` unload_models()`
+- Với hunyuan, chưa sửa gì, model dùng xong bị offload về RAM
+- [Backlogs] Điều phối hệ thống, vừa load_models (pha sinh mesh) khi vừa chạy models (pha chỉnh ảnh+routing)
+  - Hiện bước tách nền mất gần 1ph
+- [Backlogs] Đọc thêm về API, đổi tên, thêm vài endpoint (đọc/free task query)
+- [Backlogs] Đỏi flux GGUF => FP8
+
+
+
+**Base commands**
 
 ```python
 # Login and Verify current user
@@ -124,7 +149,17 @@ modal deploy file.py
 # Immediately stop
 modal container list
 modal container stop <container-id>
+
+# Logs
+modal app list
+modal app logs <app-id>
 ```
+
+Mỗi lần deploy, app thêm một tag mới (v1,v2,..). Dùng lệnh `modal app stop` sẽ tạo app mới, tag mới (không nên). Muốn dừng ngay (đỡ tốn tiền) chỉ cần `container stop`
+
+
+
+
 
 ## Appendix A
 
